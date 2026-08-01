@@ -1,0 +1,23 @@
+OBS Studio Playlist Edition - License and Source Notice
+
+This package combines:
+
+1. OBS Studio 32.2.1
+   Copyright OBS Project contributors.
+   Licensed under GNU General Public License version 2 or later.
+   Upstream: https://github.com/obsproject/obs-studio
+
+2. Media Playlist Source 0.1.3
+   Copyright CodeYan01 and contributors.
+   Licensed under GNU General Public License version 2.
+   Upstream: https://github.com/CodeYan01/media-playlist-source
+
+The installed licenses directory contains the complete license texts, source
+archives for the distributed versions, upstream links, checksums, and a note
+describing the locally added Simplified Chinese translation.
+
+This installer does not include user profiles, scene collections, stream keys,
+accounts, cookies, recordings, or personal media files.
+
+The software is provided without warranty, to the extent permitted by law.
+

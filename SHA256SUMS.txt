@@ -1,0 +1,2 @@
+1a84a6528df195cd150f58c20eba063cd7194379596d5fde45ae27a1f929e825  OBS-Studio-32.2.1-Playlist-Edition-Setup.exe
+
