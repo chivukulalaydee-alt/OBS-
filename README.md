@@ -17,6 +17,8 @@
 
 下载后可以使用仓库中的 `SHA256SUMS.txt` 校验文件完整性。
 
+完整操作步骤请查看：[OBS Studio 播放列表版使用说明](docs/USAGE.md)。
+
 ## 使用方法
 
 1. 运行安装器并完成安装。
@@ -38,6 +40,7 @@
 - `plugin/media-playlist-source`：插件 0.1.3 源码及简体中文翻译。
 - `installer`：Unicode 中文 NSIS 安装脚本与许可说明。
 - `docs/BUILD.md`：整包构建说明。
+- `docs/USAGE.md`：面向普通用户的完整中文使用说明。
 - `docs/VERIFICATION.md`：已执行的安装、启动和卸载验证。
 - `third_party`：OBS 与插件的 GPL 许可证文本。
 
@@ -57,4 +60,3 @@ New-Item -ItemType Directory -Force dist
 - 本仓库保留完整许可证文本、上游地址和对应源码说明。
 
 安装器目前未使用商业代码签名证书，Windows SmartScreen 可能显示“未知发布者”。
-
