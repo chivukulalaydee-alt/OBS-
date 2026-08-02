@@ -8,6 +8,9 @@
 !/deps
 !/docs
 !/frontend
+!/installer
+!/installer/media-workshop
+!/installer/media-workshop/**
 !/libobs*
 !/plugins
 !/shared
@@ -49,3 +52,12 @@ build-aux/flatpak-github-action-modified-*
 
 # Exclude CMake build number cache
 /cmake/.CMakeBuildNumber
+
+# OBS Media Workshop installer source is tracked, but generated payloads and
+# release binaries are published as GitHub Release assets instead of Git blobs.
+/installer/media-workshop/output/
+/installer/media-workshop/package_staging_*/
+/installer/media-workshop/payload/obs-studio-media-workshop.zip
+/installer/media-workshop/*.zip
+/installer/media-workshop/*.7z
+/installer/media-workshop/*.exe
