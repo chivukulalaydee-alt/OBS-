@@ -1,6 +1,6 @@
 # OBS 素材工作台完整安装器
 
-本目录保存 OBS 素材工作台 1.0.1 的 Windows 图形安装器源码。安装器把已经构建完成的 OBS、素材工作台和 Media Playlist Source 打包到一个 EXE 中，用户无需预先安装官方 OBS，并可在安装界面选择目标目录。
+本目录保存 OBS 素材工作台 1.1.0 的 Windows 图形安装器源码。安装器把已经构建完成的 OBS、素材工作台、Media Playlist Source 和 libVLC 3.0.23 运行库打包到一个 EXE 中，用户无需预先安装官方 OBS 或 VLC，并可在安装界面选择目标目录。
 
 ## 目录结构
 
@@ -32,7 +32,7 @@ C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe
 构建脚本会强制校验 payload 的 SHA-256：
 
 ```text
-A1F0A26C77A993B0A7B53DFDB361D61FEA75A7386BD5C7078DF9A4B5D1F900A6
+1B6E364494929C6DC9024A57FCA7C57E3FDF48D39D92468F3BF15983B9A99F99
 ```
 
 哈希不匹配时构建会立即失败，避免把错误或被修改的 OBS 安装树装入安装器。
@@ -43,7 +43,7 @@ A1F0A26C77A993B0A7B53DFDB361D61FEA75A7386BD5C7078DF9A4B5D1F900A6
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\installer\media-workshop\Build-Installer.ps1 `
-  -OutputExe .\installer\media-workshop\output\OBS-Media-Workshop-1.0.1-Setup.exe
+  -OutputExe .\installer\media-workshop\output\OBS-Media-Workshop-1.1.0-Setup.exe
 ```
 
 脚本会：
@@ -63,12 +63,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\installer\media-worksh
 - 覆盖安装前会创建带时间戳的旧版本备份。
 - 新版本换入失败时会尝试恢复旧版本。
 - 安装结束后创建桌面快捷方式并可直接启动定制 OBS。
-- 安装目录内提供 `卸载OBS素材工作台.cmd`。
+- 快捷方式固定使用 `bin\64bit` 作为工作目录，避免直接跨目录启动时出现语言文件查找错误。
+- 安装前检查 FFmpeg、FFprobe、随机播放插件、VLC 视频插件、libVLC 运行库和 OBS 基础语言文件。
+- 随包提供 VLC 视频源所需运行库，不包含 `vlc.exe` 桌面播放器。
+- 安装目录内提供 `卸载OBS素材工作台.cmd`，卸载时同时清理覆盖安装保留的时间戳备份。
 
 无人值守测试参数：
 
 ```powershell
-.\OBS-Media-Workshop-1.0.1-Setup.exe --yes `
+.\OBS-Media-Workshop-1.1.0-Setup.exe --yes `
   --install-root "D:\OBS 素材工作台测试" `
   --no-launch `
   --log "D:\OBS 素材工作台测试\install.log"
@@ -78,18 +81,18 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\installer\media-worksh
 
 请把以下文件作为 GitHub Release 附件上传，不要使用普通 Git 提交大体积安装包：
 
-- `OBS-Media-Workshop-1.0.1-Setup.exe`
+- `OBS-Media-Workshop-1.1.0-Setup.exe`
 - `使用说明.txt`
 - `SHA256SUMS.txt`
 
-正式 1.0.1 安装器 SHA-256：
+正式 1.1.0 安装器 SHA-256：
 
 ```text
-A26FEA2196DC1E1AC3A8D1CD35FD0E459692FD80065F5D5661EF25AC87A74A65
+56FF65CBDBABE4A56509BACD6AEB1834798502AB08A7A605152F464174CA0F02  OBS-Media-Workshop-1.1.0-Setup.exe
 ```
 
 ## 合规与许可证
 
 本项目用于正常直播制作、素材离线处理、循环播放和随机播放。请确保视频、音频、字体、图片和插件拥有合法使用权，并遵守直播平台规则。不要把本项目宣传为绕过平台审核、规避识别或“防封”工具。
 
-公开分发时必须保留 OBS Studio、Media Playlist Source、FFmpeg 及其他第三方组件的许可证和源码获取说明，具体见 `payload\SOURCE_NOTICE.md`。
+公开分发时必须保留 OBS Studio、Media Playlist Source、FFmpeg、VLC/libVLC 及其他第三方组件的许可证和源码获取说明，具体见 `payload\SOURCE_NOTICE.md`。

@@ -12,7 +12,7 @@ $payloadRoot = Join-Path $projectRoot "payload"
 $installScript = Join-Path $payloadRoot "install.ps1"
 $installCommand = Join-Path $payloadRoot "install.cmd"
 $obsArchive = Join-Path $payloadRoot "obs-studio-media-workshop.zip"
-$expectedObsHash = "A1F0A26C77A993B0A7B53DFDB361D61FEA75A7386BD5C7078DF9A4B5D1F900A6"
+$expectedObsHash = "1B6E364494929C6DC9024A57FCA7C57E3FDF48D39D92468F3BF15983B9A99F99"
 
 foreach ($requiredPath in @($CscPath, $sourcePath, $installScript, $installCommand, $obsArchive)) {
     if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {

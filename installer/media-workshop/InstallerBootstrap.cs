@@ -10,17 +10,17 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 [assembly: AssemblyTitle("OBS 素材工作台安装程序")]
-[assembly: AssemblyDescription("OBS Studio 32.2.1 素材工作台完整安装程序")]
+[assembly: AssemblyDescription("OBS Studio 32.2.1 素材工作台与内置 libVLC 完整安装程序")]
 [assembly: AssemblyProduct("OBS 素材工作台")]
-[assembly: AssemblyVersion("1.0.1.0")]
-[assembly: AssemblyFileVersion("1.0.1.0")]
+[assembly: AssemblyVersion("1.1.0.0")]
+[assembly: AssemblyFileVersion("1.1.0.0")]
 
 internal static class InstallerBootstrap
 {
     private const string PayloadResourceName = "ObsMediaWorkshopPayload";
     private const string ProductName = "OBS 素材工作台";
     private const string DefaultInstallFolderName = "OBS素材工作台";
-    private const string ProductVersion = "1.0.1";
+    private const string ProductVersion = "1.1.0";
 
     [STAThread]
     private static int Main(string[] args)
@@ -369,7 +369,7 @@ internal static class InstallerBootstrap
             Controls.Add(title);
 
             Label subtitle = new Label();
-            subtitle.Text = "基于 OBS Studio 32.2.1，已包含素材工作台和媒体播放列表源。";
+            subtitle.Text = "基于 OBS Studio 32.2.1，已包含素材工作台、随机播放和 VLC 视频源。";
             subtitle.AutoSize = true;
             subtitle.ForeColor = Color.FromArgb(80, 80, 80);
             subtitle.Location = new Point(31, 66);

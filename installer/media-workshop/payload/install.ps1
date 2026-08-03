@@ -4,7 +4,7 @@
 
 $packageDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $zipPath = Join-Path $packageDir "obs-studio-media-workshop.zip"
-$expectedHash = "A1F0A26C77A993B0A7B53DFDB361D61FEA75A7386BD5C7078DF9A4B5D1F900A6"
+$expectedHash = "1B6E364494929C6DC9024A57FCA7C57E3FDF48D39D92468F3BF15983B9A99F99"
 $defaultRoot = Join-Path $env:LOCALAPPDATA "OBS素材工作台"
 $requestedRoot = if ($env:OBS_MEDIA_WORKSHOP_INSTALL_ROOT) { $env:OBS_MEDIA_WORKSHOP_INSTALL_ROOT } else { $defaultRoot }
 if ([string]::IsNullOrWhiteSpace($requestedRoot)) {
@@ -60,11 +60,27 @@ try {
     $stagedInstall = Join-Path $stagingRoot "obs-studio"
     $stagedExe = Join-Path $stagedInstall "bin\64bit\obs64.exe"
     $stagedFFmpeg = Join-Path $stagedInstall "data\obs-studio\media-workshop\bin\ffmpeg.exe"
+    $stagedFFprobe = Join-Path $stagedInstall "data\obs-studio\media-workshop\bin\ffprobe.exe"
     $stagedPlugin = Join-Path $stagedInstall "obs-plugins\64bit\media-playlist-source.dll"
-    if (-not (Test-Path -LiteralPath $stagedExe) -or
-        -not (Test-Path -LiteralPath $stagedFFmpeg) -or
-        -not (Test-Path -LiteralPath $stagedPlugin)) {
-        throw "安装数据不完整，缺少 OBS、FFmpeg 或播放列表组件。"
+    $stagedVlcPlugin = Join-Path $stagedInstall "obs-plugins\64bit\vlc-video.dll"
+    $stagedLibVlc = Join-Path $stagedInstall "data\obs-plugins\vlc-video\runtime\libvlc.dll"
+    $stagedLibVlcCore = Join-Path $stagedInstall "data\obs-plugins\vlc-video\runtime\libvlccore.dll"
+    $stagedVlcPlugins = Join-Path $stagedInstall "data\obs-plugins\vlc-video\runtime\plugins"
+    $stagedVlcExe = Join-Path $stagedInstall "data\obs-plugins\vlc-video\runtime\vlc.exe"
+    $stagedLocale = Join-Path $stagedInstall "data\obs-studio\locale\en-US.ini"
+    if (-not (Test-Path -LiteralPath $stagedExe -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $stagedFFmpeg -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $stagedFFprobe -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $stagedPlugin -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $stagedVlcPlugin -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $stagedLibVlc -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $stagedLibVlcCore -PathType Leaf) -or
+        -not (Test-Path -LiteralPath $stagedVlcPlugins -PathType Container) -or
+        -not (Test-Path -LiteralPath $stagedLocale -PathType Leaf)) {
+        throw "安装数据不完整，缺少 OBS、语言文件、FFmpeg、播放列表或 libVLC 组件。"
+    }
+    if (Test-Path -LiteralPath $stagedVlcExe) {
+        throw "安装数据包含不应随包分发的 vlc.exe，已拒绝安装。"
     }
 
     if (Test-Path -LiteralPath $installPath) {
@@ -93,6 +109,8 @@ if (Get-Process obs64,obs32,obs -ErrorAction SilentlyContinue) {
 }
 `$installPath = Join-Path `$PSScriptRoot "obs-studio"
 Remove-Item -LiteralPath `$installPath -Recurse -Force
+Get-ChildItem -LiteralPath `$PSScriptRoot -Directory -Filter "obs-studio.backup-*" -ErrorAction SilentlyContinue |
+    Remove-Item -Recurse -Force
 Remove-Item -LiteralPath '$shortcutPathForPs' -Force -ErrorAction SilentlyContinue
 Write-Host "OBS 素材工作台已卸载。"
 "@ | Set-Content -LiteralPath $uninstallPs1 -Encoding UTF8
