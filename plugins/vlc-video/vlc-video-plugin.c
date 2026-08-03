@@ -75,6 +75,18 @@ void *libvlc_module = NULL;
 void *libvlc_core_module = NULL;
 #endif
 
+#ifdef _WIN32
+enum vlc_load_origin {
+	VLC_LOAD_NONE,
+	VLC_LOAD_BUNDLED,
+	VLC_LOAD_SYSTEM,
+};
+
+static enum vlc_load_origin vlc_load_origin = VLC_LOAD_NONE;
+static wchar_t *previous_vlc_plugin_path = NULL;
+static bool previous_vlc_plugin_path_exists = false;
+#endif
+
 libvlc_instance_t *libvlc = NULL;
 uint64_t time_start = 0;
 
@@ -85,7 +97,7 @@ static bool load_vlc_funcs(void)
 		func##_ = os_dlsym(libvlc_module, #func);       \
 		if (!func##_) {                                 \
 			blog(LOG_WARNING,                       \
-			     "[vlc-video]: Could not func VLC " \
+			     "[vlc-video]: Could not load VLC " \
 			     "function %s, VLC loading failed", \
 			     #func);                            \
 			return false;                           \
@@ -150,9 +162,82 @@ static bool load_vlc_funcs(void)
 	return true;
 }
 
-static bool load_libvlc_module(void)
-{
 #ifdef _WIN32
+static void restore_vlc_plugin_path(void)
+{
+	if (previous_vlc_plugin_path_exists)
+		SetEnvironmentVariableW(L"VLC_PLUGIN_PATH", previous_vlc_plugin_path);
+	else
+		SetEnvironmentVariableW(L"VLC_PLUGIN_PATH", NULL);
+
+	bfree(previous_vlc_plugin_path);
+	previous_vlc_plugin_path = NULL;
+	previous_vlc_plugin_path_exists = false;
+}
+
+static bool set_bundled_vlc_plugin_path(const char *path_utf8)
+{
+	wchar_t *path_wide = NULL;
+	DWORD previous_size = GetEnvironmentVariableW(L"VLC_PLUGIN_PATH", NULL, 0);
+
+	if (previous_size > 0) {
+		previous_vlc_plugin_path = bzalloc(previous_size * sizeof(wchar_t));
+		if (GetEnvironmentVariableW(L"VLC_PLUGIN_PATH", previous_vlc_plugin_path, previous_size) > 0)
+			previous_vlc_plugin_path_exists = true;
+	}
+
+	if (os_utf8_to_wcs_ptr(path_utf8, 0, &path_wide) == 0 || !path_wide) {
+		restore_vlc_plugin_path();
+		return false;
+	}
+
+	const bool result = SetEnvironmentVariableW(L"VLC_PLUGIN_PATH", path_wide) != 0;
+	bfree(path_wide);
+	if (!result)
+		restore_vlc_plugin_path();
+	return result;
+}
+
+static bool load_bundled_libvlc_module(void)
+{
+	char *runtime_path = obs_module_file("runtime");
+	char *plugins_path = obs_module_file("runtime/plugins");
+	char *core_path = obs_module_file("runtime/libvlccore.dll");
+	char *libvlc_path = obs_module_file("runtime/libvlc.dll");
+	bool loaded = false;
+
+	if (!runtime_path || !plugins_path || !core_path || !libvlc_path || !os_file_exists(core_path) ||
+	    !os_file_exists(libvlc_path) || !os_file_exists(plugins_path)) {
+		blog(LOG_INFO, "[vlc-video]: Bundled VLC runtime not found at %s", runtime_path ? runtime_path : "(null)");
+		goto cleanup;
+	}
+
+	if (!set_bundled_vlc_plugin_path(plugins_path)) {
+		blog(LOG_WARNING, "[vlc-video]: Could not set VLC_PLUGIN_PATH for bundled runtime");
+		goto cleanup;
+	}
+
+	libvlc_module = os_dlopen(libvlc_path);
+	if (!libvlc_module) {
+		blog(LOG_WARNING, "[vlc-video]: Could not load bundled libVLC from %s", libvlc_path);
+		restore_vlc_plugin_path();
+		goto cleanup;
+	}
+
+	vlc_load_origin = VLC_LOAD_BUNDLED;
+	loaded = true;
+	blog(LOG_INFO, "[vlc-video]: Loaded bundled libVLC runtime from %s", runtime_path);
+
+cleanup:
+	bfree(libvlc_path);
+	bfree(core_path);
+	bfree(plugins_path);
+	bfree(runtime_path);
+	return loaded;
+}
+
+static bool load_system_libvlc_module(void)
+{
 	char *path_utf8 = NULL;
 	wchar_t path[1024];
 	LSTATUS status;
@@ -175,6 +260,22 @@ static bool load_libvlc_module(void)
 	}
 
 	RegCloseKey(key);
+	if (libvlc_module) {
+		vlc_load_origin = VLC_LOAD_SYSTEM;
+		blog(LOG_INFO, "[vlc-video]: Loaded system VLC runtime from the VideoLAN registry path");
+	}
+	return libvlc_module != NULL;
+}
+#endif
+
+static bool load_libvlc_module(void)
+{
+#ifdef _WIN32
+	if (load_bundled_libvlc_module())
+		return true;
+
+	blog(LOG_INFO, "[vlc-video]: Bundled VLC unavailable, checking system VLC installation");
+	return load_system_libvlc_module();
 #else
 
 /* According to otoolo -L, this is what libvlc.dylib wants. */
@@ -217,13 +318,27 @@ bool load_libvlc(void)
 bool obs_module_load(void)
 {
 	if (!load_libvlc_module()) {
-		blog(LOG_INFO, "[vlc-video]: Couldn't find VLC installation, "
-			       "VLC video source disabled");
+		blog(LOG_INFO, "[vlc-video]: Neither bundled nor system VLC is available, VLC video source disabled");
 		return true;
 	}
 
-	if (!load_vlc_funcs())
+	if (!load_vlc_funcs()) {
+#ifdef _WIN32
+		if (vlc_load_origin == VLC_LOAD_BUNDLED) {
+			blog(LOG_WARNING, "[vlc-video]: Bundled libVLC symbols are incomplete, checking system VLC");
+			os_dlclose(libvlc_module);
+			libvlc_module = NULL;
+			vlc_load_origin = VLC_LOAD_NONE;
+			restore_vlc_plugin_path();
+			if (!load_system_libvlc_module() || !load_vlc_funcs())
+				return true;
+		} else {
+			return true;
+		}
+#else
 		return true;
+#endif
+	}
 
 	blog(LOG_INFO, "[vlc-video]: VLC %s found, VLC video source enabled", libvlc_get_version_());
 
@@ -241,4 +356,9 @@ void obs_module_unload(void)
 #endif
 	if (libvlc_module)
 		os_dlclose(libvlc_module);
+#ifdef _WIN32
+	if (vlc_load_origin == VLC_LOAD_BUNDLED)
+		restore_vlc_plugin_path();
+	vlc_load_origin = VLC_LOAD_NONE;
+#endif
 }
